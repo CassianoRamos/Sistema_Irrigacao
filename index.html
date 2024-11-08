@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <link rel="icon" href="icon.png" >
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoramento de Irrigação Sustentável</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e0f7e9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-image: url("floresta-back.jpeg");
+            background-size: cover; 
+            background-repeat: no-repeat; 
+            background-position: center center; 
+        }
+        #container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            width: 90%;
+            max-width: 800px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2e7d32;
+        }
+        .section {
+            margin-top: 20px;
+        }
+        .section img {
+            width: 100%;
+            border-radius: 8px;
+        }
+        .data-display {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e8f5e9;
+            border-radius: 5px;
+            border: 1px solid #c8e6c9;
+        }
+        .data-box {
+            width: 45%;
+            text-align: center;
+            padding: 10px;
+            background-color: #f1f8e9;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .data-box h2 {
+            color: #388e3c;
+            margin-bottom: 5px;
+        }
+        #messages {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e8f5e9;
+            height: 150px;
+            overflow-y: auto;
+            border-radius: 5px;
+            border: 1px solid #c8e6c9;
+        }
+        .message {
+            padding: 8px;
+            margin: 5px 0;
+            background-color: #f1f8e9;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            color: #388e3c;
+        }
+    </style>
+    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.8.2.7.js"></script>
+</head>
+<body>
+    
+    <div id="container">
+        <h1>Monitoramento de Irrigação</h1>
+
+        <div class="section">
+            <h2>Sistema de Irrigação</h2>
+            
+        </div>
+
+        <div class="section data-display">
+            <div class="data-box">
+                <h2>Última Irrigação</h2>
+                <p id="soil-moisture">Carregando...</p>
+            </div>
+            <div class="data-box">
+                <h2>Nível de Água</h2>
+                <p id="water-level">Carregando...</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Alertas de Irrigação</h2>
+            <div id="messages"></div>
+        </div>
+    </div>
+
+    <script>
+        const showMessage = (msg) => {
+            const message = document.createElement('div');
+            message.className = 'message';
+            message.innerText = msg;
+            document.getElementById('messages').appendChild(message);
+        };
+
+        const updateSoilMoisture = (value) => {
+            console.log("Atualizando umidade do solo:", value);
+            document.getElementById('soil-moisture').innerText = `${value}`;
+        };
+
+        const updateWaterLevel = (value) => {
+            console.log("Atualizando nível de água:", value);
+            document.getElementById('water-level').innerText = `${value} L`;
+        };
+
+        const setupPubNub = () => {
+            const pubnub = new PubNub({
+                publishKey: "pub-c-6e5bc9c9-1871-4287-89e7-37ec83a4d2ec",
+                subscribeKey: "sub-c-e71d1d1d-845e-4396-abfb-a556997f18ea",
+                userId: "irrigation-monitor-user"
+            });
+
+            const channel = "Irrigacao_automatizada";
+            pubnub.subscribe({ channels: [channel] });
+
+            pubnub.addListener({
+                message: function(event) {
+                    console.log("Mensagem recebida:", event.message);
+
+                    const { text, soilMoisture, waterLevel } = event.message;
+
+                    if (text) showMessage(text);
+
+                    if (soilMoisture !== undefined) {
+                        updateSoilMoisture(soilMoisture);
+                    } else {
+                        console.warn("Ultima irrigação não recebida");
+                    }
+
+                    if (waterLevel !== undefined) {
+                        updateWaterLevel(waterLevel);
+                    } else {
+                        console.warn("Nível de água não recebido");
+                    }
+                }
+            });
+        };
+
+        window.onload = setupPubNub;
+    </script>
+    
+</body>
+</html>
